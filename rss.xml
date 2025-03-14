@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title type="text">sectest1</title>
+  <id>uuid:fd3efcf3-9c5d-4cb8-82bc-ed8ee8a0c59e;id=7200899</id>
+  <updated>2024-01-15T07:03:35Z</updated>
+  <author>
+    <name>tr1ple</name>
+    <uri>https://www.cnblogs.com/tr1ple/</uri>
+  </author>
+  <generator>feed.cnblogs.com</generator>
+  <entry>
+    <id>http://100.100.100.200/latest</id>
+    <title type="text">Fastjson1.2.68 绕Autotype的一点总结 - tr1ple</title>
+    <summary type="text">这篇文章主要总结学习目前网上关于1.2.68下绕过Autotype的一些方法用到的思路。 前置知识： checkautotype因为是对要进行反序列化的类进行检测的方法 所以我们只需要让其返回Class类型的实例即可 一般会有以下几种情况通过验证： 1.autoTypeCheckHandlers不为</summary>
+    <published>2020-08-15T10:42:00Z</published>
+    <updated>2020-08-15T10:42:00Z</updated>
+    <author>
+      <name>tr1ple</name>
+      <uri>https://www.cnblogs.com/tr1ple/</uri>
+    </author>
+    <link rel="alternate" href="http://100.100.100.200/latest" />
+    <link rel="alternate" type="text/html" href="http://100.100.100.200/latest" />
+    <content type="html">【摘要】这篇文章主要总结学习目前网上关于1.2.68下绕过Autotype的一些方法用到的思路。 前置知识： checkautotype因为是对要进行反序列化的类进行检测的方法 所以我们只需要让其返回Class类型的实例即可 一般会有以下几种情况通过验证： 1.autoTypeCheckHandlers不为 &lt;a href="https://www.cnblogs.com/tr1ple/p/13489260.html" target="_blank"&gt;阅读全文&lt;/a&gt;</content>
+  </entry>
+  <entry>
+    <id>http://metadata.tencentyun.com/latest</id>
+    <title type="text">Java openrasp学习记录-2 - tr1ple</title>
+    <summary type="text">Author:tr1ple 主要分析以下四个部分： 1.openrasp agent 这里主要进行插桩的定义，其pom.xml中定义了能够当类重新load时重定义以及重新转换 这里定义了两种插桩方式对应之前安装时的独立web的jar的attach或者修改启动脚本添加rasp的jar的方式 其中ini</summary>
+    <published>2020-08-09T05:56:00Z</published>
+    <updated>2020-08-09T05:56:00Z</updated>
+    <author>
+      <name>tr1ple</name>
+      <uri>https://www.cnblogs.com/tr1ple/</uri>
+    </author>
+    <link rel="alternate" href="http://metadata.tencentyun.com/latest" />
+    <link rel="alternate" type="text/html" href="http://metadata.tencentyun.com/latest" />
+    <content type="html">【摘要】Author:tr1ple 主要分析以下四个部分： 1.openrasp agent 这里主要进行插桩的定义，其pom.xml中定义了能够当类重新load时重定义以及重新转换 这里定义了两种插桩方式对应之前安装时的独立web的jar的attach或者修改启动脚本添加rasp的jar的方式 其中ini &lt;a href="https://www.cnblogs.com/tr1ple/p/12918942.html" target="_blank"&gt;阅读全文&lt;/a&gt;</content>
+  </entry>
+  <entry>
+    <id>https://www.cnblogs.com/tr1ple/p/12411357.html</id>
+    <title type="text">java反序列化-ysoserial-调试分析总结篇(5)   - tr1ple</title>
+    <summary type="text">前言： 这篇文章继续分析commonscollections5，由如下调用链可以看到此时最外层的类不是annotationinvoke，也不是priorityqueue了，变成了badattribute 该类要求没有配置security manager 利用链分析： 首先在badAttribute的</summary>
+    <published>2020-03-04T15:10:00Z</published>
+    <updated>2020-03-04T15:10:00Z</updated>
+    <author>
+      <name>tr1ple</name>
+      <uri>https://www.cnblogs.com/tr1ple/</uri>
+    </author>
+    <link rel="alternate" href="https://www.cnblogs.com/tr1ple/p/12411357.html" />
+    <link rel="alternate" type="text/html" href="https://www.cnblogs.com/tr1ple/p/12411357.html" />
+    <content type="html">【摘要】前言： 这篇文章继续分析commonscollections5，由如下调用链可以看到此时最外层的类不是annotationinvoke，也不是priorityqueue了，变成了badattribute 该类要求没有配置security manager 利用链分析： 首先在badAttribute的 &lt;a href="https://www.cnblogs.com/tr1ple/p/12411357.html" target="_blank"&gt;阅读全文&lt;/a&gt;</content>
+  </entry>
+</feed>
