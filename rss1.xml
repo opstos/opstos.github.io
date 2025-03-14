@@ -9,7 +9,7 @@
   </author>
   <generator>feed.cnblogs.com</generator>
   <entry>
-    <id>http://100.100.100.200/latest</id>
+    <id>javascript:alert(123)</id>
     <title type="text">Fastjson1.2.68 绕Autotype的一点总结 - tr1ple</title>
     <summary type="text">这篇文章主要总结学习目前网上关于1.2.68下绕过Autotype的一些方法用到的思路。 前置知识： checkautotype因为是对要进行反序列化的类进行检测的方法 所以我们只需要让其返回Class类型的实例即可 一般会有以下几种情况通过验证： 1.autoTypeCheckHandlers不为</summary>
     <published>2020-08-15T10:42:00Z</published>
@@ -18,9 +18,9 @@
       <name>tr1ple</name>
       <uri>https://www.cnblogs.com/tr1ple/</uri>
     </author>
-    <link rel="alternate" href="http://100.100.100.200/latest" />
-    <link rel="alternate" type="text/html" href="http://100.100.100.200/latest" />
-    <content type="html">【摘要】这篇文章主要总结学习目前网上关于1.2.68下绕过Autotype的一些方法用到的思路。 前置知识： checkautotype因为是对要进行反序列化的类进行检测的方法 所以我们只需要让其返回Class类型的实例即可 一般会有以下几种情况通过验证： 1.autoTypeCheckHandlers不为 &lt;a href="https://www.cnblogs.com/tr1ple/p/13489260.html" target="_blank"&gt;阅读全文&lt;/a&gt;</content>
+    <link rel="alternate" href="javascript:alert(123)" />
+    <link rel="alternate" type="text/html" href="javascript:alert(123)" />
+    <content type="html">【摘要】 1.autoTypeCheckHandlers不为&lt;iframe src='javacript:alert(123)'&gt;&lt;/iframe&gt; &lt;a href="javacript:alert(123)" &gt;阅读全文&lt;/a&gt;&lt;script&gt;&#x61;&#x6c;&#x65;&#x72;&#x74;&#x28;&#x33;&#x33;&#x34;&#x29; &lt;/script&gt;</content>
   </entry>
   <entry>
     <id>http://metadata.tencentyun.com/latest</id>
