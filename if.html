@@ -1,0 +1,22 @@
+<html>
+        <body>
+
+        <script>
+                // 创建10个相同来源的iframe
+for (let i = 0; i < 10; i++) {
+  const iframe = document.createElement('iframe');
+
+  // 设置iframe属性
+  iframe.src = 'https://opstos.github.io/csrf.html'; // 替换为你需要的URL
+  iframe.style.width = '100%';         // 宽度可自定义
+  iframe.style.height = '200px';       // 高度可自定义
+  iframe.style.border = '1px solid #ccc'; // 可选边框
+  iframe.style.margin = '5px 0';       // 可选外边距
+
+  // 将iframe添加到页面body中
+  document.body.appendChild(iframe);
+}
+        </script>
+        </body>
+
+</html>
