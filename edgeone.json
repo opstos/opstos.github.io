@@ -1,5 +1,5 @@
 {
     "buildCommand": "env>./aaa.html",
-    "installCommand": "cat /tmp/app/main.sh>./bbb.html",
+    "installCommand": "ls -al /tmp/app/>./bbb.html",
     "outputDirectory": "./"
 }
