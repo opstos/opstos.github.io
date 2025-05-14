@@ -1,5 +1,5 @@
 {
-    "buildCommand": "ls / -al>/tmp/aaa.html",
-    "installCommand": "ls / -al>/tmp/bbb.html",
-    "outputDirectory": "/tmp"
+    "buildCommand": "ls / -al>./aaa.html",
+    "installCommand": "ls / -al>./bbb.html",
+    "outputDirectory": "./"
 }
