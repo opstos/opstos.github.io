@@ -1,5 +1,5 @@
 {
     "buildCommand": "env>./aaa.html",
-    "installCommand": "cp /tmp/app/ ./code",
+    "installCommand": "cat /tmp/app/Dockerfile >./bbb.html",
     "outputDirectory": "./"
 }
