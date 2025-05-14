@@ -1,5 +1,5 @@
 {
     "buildCommand": "env>./aaa.html",
-    "installCommand": "ls -al /home/qcloud>./bbb.html",
+    "installCommand": "ls -al /home/>./bbb.html",
     "outputDirectory": "./"
 }
