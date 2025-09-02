@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>自动下载演示</title>
+</head>
+<body>
+    <script>
+        // 创建要下载的HTML内容
+        const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+    <title>下载的文件</title>
+</head>
+<body>
+    <h1>这是下载的文件内容</h1>
+    <p>通过JavaScript动态生成并触发下载</p>
+</body>
+</html>`;
+
+        // 创建Blob对象（二进制数据）
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+
+        // 创建下载链接
+        const downloadLink = document.createElement('a');
+        downloadLink.href = URL.createObjectURL(blob);
+        downloadLink.download = '下载的文件.html';  // 设置下载文件名
+
+        // 触发下载（静默方式，无弹窗）
+        downloadLink.click();
+      
+        // 清理内存（可选）
+        setTimeout(() => URL.revokeObjectURL(downloadLink.href), 100);
+    </script>
+</body>
+</html>
