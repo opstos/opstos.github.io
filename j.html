@@ -1,0 +1,15 @@
+<!doctype html>
+<html><body>
+<h2>Tap to test JSBridge</h2>
+<button onclick="call('Copy', '攻击者塞进你剪贴板的字符串')">复制到剪贴板</button>
+<button onclick="call('RouterPush', {url: '/setting/account'})">跳设置→账号</button>
+<button onclick="call('RouterReplace', {url: '/webview?url=https://example.com'})">再开一层</button>
+<script>
+function call(target, data){
+  window.ReactNativeWebView.postMessage(JSON.stringify({
+    eventName: 'ActionEvent',
+    type: 'event',
+    payload: { type: 'event', target: target, data: data }
+  }));
+}
+</script></body></html>
