@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS代码在线执行工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", monospace;
+        }
+
+        body {
+            padding: 2rem;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 2rem;
+        }
+
+        #jsCode {
+            width: 100%;
+            height: 200px;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            margin-bottom: 1rem;
+        }
+
+        #runBtn {
+            padding: 0.8rem 2rem;
+            background-color: #42b983;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #runBtn:hover {
+            background-color: #359469;
+        }
+
+        .output-area {
+            margin-top: 2rem;
+        }
+
+        .output-title {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 0.8rem;
+            font-weight: bold;
+        }
+
+        #output {
+            width: 100%;
+            min-height: 150px;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-y: auto;
+            max-height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>JS代码在线执行工具</h1>
+        <textarea id="jsCode" placeholder="请在这里输入JS代码，例如：
+console.log('Hello World!');
+console.log(window); // 可正常展示所有属性，无报错"></textarea>
+        <button id="runBtn">执行JS代码</button>
+        <div class="output-area">
+            <div class="output-title">执行输出结果：</div>
+            <div id="output"></div>
+        </div>
+    </div>
+
+    <script>
+        // 获取页面元素
+        const jsCodeElem = document.getElementById('jsCode');
+        const runBtnElem = document.getElementById('runBtn');
+        const outputElem = document.getElementById('output');
+
+        // 保存原始的console.log方法
+        const originalConsoleLog = console.log;
+
+        // 更可靠的Window对象判断方法
+        function isWindowObject(obj) {
+            // 使用Object.prototype.toString判断，避免原始值转换错误
+            return Object.prototype.toString.call(obj) === '[object Window]';
+        }
+
+        // 安全格式化任意值，避免原始值转换失败
+        function safeFormatValue(value, windowObj) {
+            // 优先处理Window循环引用
+            if (isWindowObject(value) || value === windowObj) {
+                return '[Circular: Window]';
+            }
+
+            // 多层try...catch确保不会报错
+            try {
+                // 函数类型：简化展示，避免过长
+                if (typeof value === 'function') {
+                    return `[Function: ${value.name || 'anonymous'}]`;
+                }
+
+                // 基本类型：直接返回
+                if (typeof value !== 'object' || value === null) {
+                    return String(value);
+                }
+
+                // 复杂对象：尝试JSON序列化，失败则显示类型和特征
+                try {
+                    return JSON.stringify(value, null, 1);
+                } catch (e) {
+                    // 序列化失败时，显示对象类型和构造函数名
+                    const constructorName = value.constructor?.name || 'Unknown';
+                    return `[Object: ${constructorName}] (无法序列化，存在循环引用或特殊内置对象)`;
+                }
+            } catch (e) {
+                // 极端情况：任何转换失败都返回兜底信息
+                return `[无法格式化的值：${e.message}]`;
+            }
+        }
+
+        // 专门处理Window对象，安全遍历所有属性
+        function formatWindowObject(safeWindow) {
+            let windowStr = '=== Window 对象所有属性（按序号排列）===\n';
+            // 获取所有属性名（包括可枚举/不可枚举，最全面）
+            const propertyNames = Object.getOwnPropertyNames(safeWindow);
+
+            propertyNames.forEach((propName, index) => {
+                // 单个属性处理失败不影响整体遍历
+                try {
+                    // 安全获取属性值（避免访问受限属性报错）
+                    let propValue;
+                    try {
+                        propValue = safeWindow[propName];
+                    } catch (accessErr) {
+                        windowStr += `${index + 1}. ${propName}: 【访问受限：${accessErr.message}】\n`;
+                        return; // 跳过当前属性，继续遍历下一个
+                    }
+
+                    // 安全格式化属性值
+                    const formattedValue = safeFormatValue(propValue, safeWindow);
+                    windowStr += `${index + 1}. ${propName}: ${formattedValue}\n`;
+                } catch (itemErr) {
+                    // 兜底：单个属性处理异常不中断整体流程
+                    windowStr += `${index + 1}. ${propName}: 【属性处理异常：${itemErr.message}】\n`;
+                }
+            });
+
+            windowStr += '=== Window 属性遍历结束 ===';
+            return windowStr;
+        }
+
+        // 重写console.log，增加多层容错
+        console.log = function(...args) {
+            // 保留原始控制台输出
+            originalConsoleLog.apply(console, args);
+
+            // 处理每个输出参数，确保单个参数失败不影响其他
+            const outputParts = [];
+            args.forEach(item => {
+                try {
+                    if (isWindowObject(item)) {
+                        // Window对象：使用专门的格式化函数
+                        outputParts.push(formatWindowObject(item));
+                    } else {
+                        // 其他值：安全格式化
+                        outputParts.push(safeFormatValue(item));
+                    }
+                } catch (paramErr) {
+                    // 单个参数处理失败，添加错误提示
+                    outputParts.push(`[参数格式化失败：${paramErr.message}]`);
+                }
+            });
+
+            // 拼接所有参数结果，追加到输出区域
+            const outputContent = outputParts.join('\n');
+            outputElem.textContent += outputContent + '\n\n';
+        };
+
+        // 执行按钮点击事件
+        runBtnElem.addEventListener('click', function() {
+            outputElem.textContent = ''; // 清空上一次输出
+
+            try {
+                const jsCode = jsCodeElem.value.trim();
+                if (!jsCode) {
+                    outputElem.textContent = '提示：请先输入要执行的JS代码！';
+                    return;
+                }
+                eval(jsCode); // 执行JS代码
+            } catch (error) {
+                // 捕获代码执行整体错误
+                outputElem.textContent += `执行错误：${error.message}\n`;
+                outputElem.textContent += `错误类型：${error.name}\n`;
+            }
+        });
+    </script>
+</body>
+</html>
