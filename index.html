@@ -104,13 +104,14 @@ window.__pha_native_to_js__ = function(id, err, data){
   if(el) el.textContent='[回 '+new Date().toLocaleTimeString()+']\nerr='+err+'\ndata='+data;
 };
 
-// pha 原生调用：__pha_bridge_engine__.call(module, method, paramsJSON, callbackId)
+// pha 原生调用：__pha_bridge_engine__.call(refId, module, method, paramsJSON)
+// 签名 call(String refId, String module, String method, String params)——回调经 __pha_native_to_js__(refId,err,data)
 function ph(module, method, params, outId){
   var eng = window[PHA];
   if(!eng || typeof eng.call!=='function'){ log(outId, PHA+' 不存在——桥未注入（段2 未过后缀白名单?）'); setBadge('env_b','bad','无桥'); return; }
   try{
-    log(outId, '发起 pha '+module+'.'+method+' cbId='+outId+' …');
-    eng.call(module, method, JSON.stringify(params||{}), outId);
+    log(outId, '发起 pha '+module+'.'+method+' refId='+outId+' …');
+    eng.call(outId, module, method, JSON.stringify(params||{}));   // ★顺序:refId, module, method, params
   }catch(e){ log(outId, 'EXC '+e); }
 }
 // 经 pha WindVane.call 转发到底层 __windvane__
@@ -145,7 +146,7 @@ function freeCall(){
   })();
 })();
 
-
+// ⓪ 发射器：目标 url 原样组装进 wdkhema://main?url=（不加工）
 function buildDeep(){
   var turl = document.getElementById('turl').value;   // 原样，不 trim / 不 strip / 不补 // / 不拼尾巴
   var enc  = encodeURIComponent(turl);
@@ -153,6 +154,11 @@ function buildDeep(){
   var raw2 = 'https://h5.hemaos.com/main?url=' + enc;   // AppLink 等价形态
   document.getElementById('golink').href = raw;
   log('out_dl', 'deeplink(原样组装):\n'+raw+'\n\nAppLink 等价:\n'+raw2);
+  log('out_adb',
+    '# adb 复核(整条单引号包住):\n'+
+    "adb shell am start -a android.intent.action.VIEW -d '"+raw+"' com.wudaokou.hippo\n"+
+    "adb shell am start -a android.intent.action.VIEW -d '"+raw2+"' com.wudaokou.hippo\n"+
+    '# 你填的目标 url 已原样组装，代码未做任何加工。');
 }
 document.getElementById('golink').addEventListener('click',function(){ log('out_dl','已发起: '+this.getAttribute('href')); });
 buildDeep();
