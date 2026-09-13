@@ -41,12 +41,19 @@
   <pre id="out_env">—</pre>
 </div>
 
+<!-- 全局 trace：自诊断，看 native 有没有回调 / evaluateJavascript -->
+<div class="card">
+  <h2>全局 trace <span class="badge">自诊断</span></h2>
+  <div class="desc">点任何调用按钮后看这里：[native回调]=native 回了 __pha_native_to_js__；[native→evaluateJavascript]=native 往页面执行了 JS；[ph]=JS 侧调用。三者都没有 → native 侧静默（无回调）。</div>
+  <pre id="out_trace" style="max-height:200px">—</pre>
+</div>
+
 <!-- 发射器：段1 载入 -->
 <div class="card">
   <h2>⓪ 发射器 — deeplink 进 pha 容器（段1 载入）</h2>
   <div class="desc">
     入口 = <code>DispatchActivity</code>(exported，<code>wdkhema://main</code> + AppLink <code>h5.hemaos.com/main</code>)。<br>
-    ★正确形态 = <code>wdkhema://main?url=&lt;目标&gt;</code>（<code>main</code> 固定 host/path，目标放 <code>url</code> 参数）。<b>目标 url 你原样填，代码不加工</b>（不 strip / 不补 // / 不拼尾巴）。<br>
+    ★正确形态 = <code>wdkhema://main?url=&lt;目标&gt;</code>（<code>main</code> 固定 host/path，目标放 <code>url</code> 参���）。<b>目标 url 你原样填，代码不加工</b>（不 strip / 不补 // / 不拼尾巴）。<br>
     要拿到桥，目标 URL 的 host 需过后缀白名单（<code>*.hemaos.com</code>）——填盒马自有域页面，或用你绕过注入闸的形态。
   </div>
   <label>目标 URL（原样组装，代码不加工）
@@ -97,56 +104,88 @@ var PHA = "__pha_bridge_engine__";
 var seq = 0;
 function log(id,o){var e=document.getElementById(id);e.textContent='['+new Date().toLocaleTimeString()+']\n'+((typeof o==='string')?o:JSON.stringify(o,null,2));}
 function setBadge(id,cls,txt){var e=document.getElementById(id);e.className='badge '+cls;e.textContent=txt;}
+function trace(m){var e=document.getElementById('out_trace');e.textContent+=m+'\n';e.scrollTop=e.scrollHeight;}
 
-// pha 回调：native 调 __pha_native_to_js__(callbackId, err, data)。这里 callbackId = DOM id
+/* ---- 自诊断探针1：拦截 webview.evaluateJavascript，看 native 想往页面执行什么 JS ---- */
+(function(){
+  try{
+    var orig = window.evaluateJavascript;
+    if(typeof orig==='function'){
+      window.evaluateJavascript = function(js, cb){
+        trace('[native→evaluateJavascript] '+String(js).slice(0,300));
+        return orig.apply(this, arguments);
+      };
+      trace('已挂钩 window.evaluateJavascript（原生回调会经过这里打印）');
+    } else { trace('window.evaluateJavascript 不是函数(型'+(typeof orig)+')——native 可能用别的回调通道'); }
+  }catch(e){ trace('挂钩 evaluateJavascript 失败: '+e); }
+})();
+
+/* ---- 自诊断探针2：全局回调钩子（native 回 __pha_native_to_js__(id,err,data)）---- */
+// native 经 evaluateJavascript 调 __pha_native_to_js__(...)。这里无论 id 匹不匹配都 trace 一条，
+// 并把结果路由到对应 DOM 卡（id = DOM 元素 id）。
 window.__pha_native_to_js__ = function(id, err, data){
+  trace('[native回调] __pha_native_to_js__(id='+id+', err='+err+', data='+String(data).slice(0,200)+')');
   var el = document.getElementById(id);
-  if(el) el.textContent='[回 '+new Date().toLocaleTimeString()+']\nerr='+err+'\ndata='+data;
+  if(el){ el.textContent='[回 '+new Date().toLocaleTimeString()+']\nerr='+err+'\ndata='+data; }
+  else { trace('  ↳ 无 DOM 元素 id='+id+'（回调 id 与卡片不匹配）'); }
 };
 
-// pha 原生调用：__pha_bridge_engine__.call(refId, module, method, paramsJSON)
-// 签名 call(String refId, String module, String method, String params)——回调经 __pha_native_to_js__(refId,err,data)
+/* ---- pha 原生调用：__pha_bridge_engine__.call(refId, module, method, paramsJSON) ---- */
 function ph(module, method, params, outId){
   var eng = window[PHA];
-  if(!eng || typeof eng.call!=='function'){ log(outId, PHA+' 不存在——桥未注入（段2 未过后缀白名单?）'); setBadge('env_b','bad','无桥'); return; }
+  trace('[ph] eng='+(typeof eng)+' eng.call='+(eng?typeof eng.call:'n/a'));
+  if(!eng || typeof eng.call!=='function'){ log(outId, PHA+' 不存在或无 call——桥未注入?'); setBadge('env_b','bad','无桥'); return; }
   try{
-    log(outId, '发起 pha '+module+'.'+method+' refId='+outId+' …');
-    eng.call(outId, module, method, JSON.stringify(params||{}));   // ★顺序:refId, module, method, params
-  }catch(e){ log(outId, 'EXC '+e); }
+    var pjson = JSON.stringify(params||{});
+    trace('[ph] 调用 call("'+outId+'","'+module+'","'+method+'",'+pjson+')');
+    log(outId, '发起 '+module+'.'+method+' refId='+outId+' param='+pjson+' …（看下方 trace + 本卡5s内是否[回]）');
+    eng.call(outId, module, method, pjson);   // ★顺序:refId, module, method, params
+    trace('[ph] eng.call 已返回（未抛异常）');
+    setTimeout(function(){
+      var e=document.getElementById(outId);
+      if(e && e.textContent.indexOf('[回')<0){
+        log(outId, '⚠ 5s 无回调。若 trace 里也没有 [native回调]/[native→evaluateJavascript] → native 侧静默 return（callMethod 的 target/adapter/controller disposed 检查）或方法分发失败无回调。');
+      }
+    },5000);
+  }catch(e){ trace('[ph] EXC '+e); log(outId, 'EXC '+e+'\n'+(e&&e.stack)); }
 }
-// 经 pha WindVane.call 转发到底层 __windvane__
+/* ---- 经 pha WindVane.call 转发到底层 __windvane__ ---- */
+// native 解析: call(refId,"WindVane","call", {func:"obj.method", param:{callbackId, data:{真实参数}}})
 function wv(obj, method, params, outId){
-  ph('WindVane','call', {obj:obj, func:method, param:params}, outId);
+  ph('WindVane','call', {func: obj+'.'+method, param:{callbackId: outId, data: params||{}}}, outId);
 }
 function freeCall(){
   var mode=document.getElementById('zmode').value.trim();
   var obj=document.getElementById('zobj').value.trim();
   var func=document.getElementById('zfunc').value.trim();
   var param=document.getElementById('zparam').value.trim()||'{}';
+  trace('[freeCall] mode='+mode+' obj='+obj+' func='+func+' param='+param);
   if(mode==='wv'){ wv(obj, func, param, 'Z'); }
   else { ph(obj, func, param, 'Z'); }
 }
 
-// 环境检测（唯一自动跑）
+/* ---- 环境检测（唯一自动跑）---- */
 (function(){
   var tries=0;
   (function poll(){
     tries++;
     var eng=window[PHA];
-    log('out_env',{
+    var info={
       'PHA桥 __pha_bridge_engine__': typeof eng,
       'call方法': eng?(typeof eng.call):'n/a',
       '底层 __windvane__': typeof window.__windvane__,
+      'window.evaluateJavascript': typeof window.evaluateJavascript,
       'location.origin': location.origin,
       'location.href': location.href
-    });
-    if(eng && typeof eng.call==='function'){ setBadge('env_b','ok','桥已注入'); return; }
-    if(tries>40){ setBadge('env_b','bad','无桥'); log('out_env','PHA 桥 6s 未出现——初始 URL 未过后缀白名单（段2 未注入），或非 pha 容器'); return; }
+    };
+    log('out_env', info);
+    if(eng && typeof eng.call==='function'){ setBadge('env_b','ok','桥已注入'); trace('pha 桥就绪'); return; }
+    if(tries>40){ setBadge('env_b','bad','无桥'); log('out_env','PHA 桥 6s 未出现——初始 URL 未过后缀白名单（段2 未注入），或非 pha 容器'); trace('pha 桥 6s 未出现'); return; }
     setTimeout(poll,150);
   })();
 })();
 
-// ⓪ 发射器：目标 url 原样组装进 wdkhema://main?url=（不加工）
+/* ---- ⓪ 发射器：目标 url 原样组装进 wdkhema://main?url=（不加工）---- */
 function buildDeep(){
   var turl = document.getElementById('turl').value;   // 原样，不 trim / 不 strip / 不补 // / 不拼尾巴
   var enc  = encodeURIComponent(turl);
@@ -158,7 +197,7 @@ function buildDeep(){
     '# adb 复核(整条单引号包住):\n'+
     "adb shell am start -a android.intent.action.VIEW -d '"+raw+"' com.wudaokou.hippo\n"+
     "adb shell am start -a android.intent.action.VIEW -d '"+raw2+"' com.wudaokou.hippo\n"+
-    '# 你填的目标 url 已原样组装，代码未做任何加工。');
+    '# 你填的目标 url ��原样组装，代码未做任何加工。');
 }
 document.getElementById('golink').addEventListener('click',function(){ log('out_dl','已发起: '+this.getAttribute('href')); });
 buildDeep();
